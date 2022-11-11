@@ -1,0 +1,20 @@
+ALTER TABLE images_metadata ADD COLUMN search_vector tsvector;
+CREATE INDEX ix_search_vector ON images_metadata USING GIN (search_vector);
+
+CREATE OR REPLACE FUNCTION update_image_metadata_content() RETURNS trigger AS $$
+BEGIN
+    new.search_vector := setweight(to_tsvector(coalesce(new.message_text, '')), 'A') ||
+        setweight(to_tsvector(coalesce(new.image_text, '')), 'B');
+    return new;
+END
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER image_search_vector_update
+BEFORE INSERT OR UPDATE
+ON images_metadata
+FOR EACH ROW EXECUTE PROCEDURE update_image_metadata_content();
+
+
+SELECT *, ts_rank(search_vector, websearch_to_tsquery('PyImageSearch')) as rank
+FROM images_metadata
+ORDER BY rank desc

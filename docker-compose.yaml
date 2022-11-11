@@ -1,0 +1,10 @@
+version: '3.7'
+services:
+    database:
+        image: postgis/postgis:11-3.2
+        environment:
+            - POSTGRES_PASSWORD=search-image-bot-password
+            - POSTGRES_DB=main-db
+            - POSTGRES_USER=search-image-bot-user
+        ports:
+            - "54327:5432"
